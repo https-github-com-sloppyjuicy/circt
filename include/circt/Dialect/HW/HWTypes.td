@@ -185,6 +185,8 @@ class TypeAliasOr<Type innerType> :
 
 // Define some types using TypeAliasOr.
 def ArrayOrAliasType : TypeAliasOr<ArrayType>;
+def StructOrAliasType : TypeAliasOr<StructType>;
+def UnionOrAliasType : TypeAliasOr<UnionType>;
 
 //===----------------------------------------------------------------------===//
 // Attributes
