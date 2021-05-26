@@ -16,6 +16,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/OperationSupport.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/Support/JSON.h"
 
 namespace json = llvm::json;
@@ -524,11 +525,25 @@ static bool parseAugmentedType(
     return true;
   }
 
-  mlir::emitError(
-      loc, "Unknown AugmentedType '" + classAttr.getValue() +
-               "'. Either this is unsupported or maybe you mispelled it?")
+  // Any of the following are known and expected, but are legacy AugmentedTypes
+  // do not have a target:
+  //   - AugmentedStringType
+  //   - AugmentedBooleanType
+  //   - AugmentedIntegerType
+  //   - AugmentedDoubleType
+  llvm::StringSet<> ignored({(Twine(package) + ".AugmentedStringType").str(),
+                             (Twine(package) + ".AugmentedBooleanType").str(),
+                             (Twine(package) + ".AugmentedIntegerType").str(),
+                             (Twine(package) + ".AugmentedDoubleType").str()});
+  if (ignored.contains(classAttr.getValue()))
+    return true;
+
+  // Anything else is unexpected or a user error if they manually wrote
+  // annotations.  Print an error and error out.
+  mlir::emitError(loc, "found unknown AugmentedType '" + classAttr.getValue() +
+                           "' (Did you misspell it?)")
           .attachNote()
-      << "See the full Annotation her: " << augmentedType;
+      << "see annotation: " << augmentedType;
   return false;
 }
 
