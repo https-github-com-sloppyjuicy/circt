@@ -363,29 +363,34 @@ void GrandCentralPass::runOnOperation() {
 
   auto builder = OpBuilder::atBlockEnd(circuitOp->getBlock());
 
+  // Utility that acts like emitOpError, but does _not_ include a note.  The
+  // note in emitOpError includes the entire op which means the **ENTIRE**
+  // FIRRTL circuit.  This doesn't communicate anything useful to the user other
+  // than flooding their terminal.
+  auto emitCircuitError = [&circuitOp](StringRef message = {}) {
+    return emitError(circuitOp.getLoc(), message);
+  };
+
   // Examine the Circuit's Annotations doing work to remove Grand Central
   // Annotations.  Ignore any unprocesssed annotations and rewrite the Circuit's
   // Annotations with these when done.
-  //
-  // TODO: Refactor this to use AnnotationSet.removeAnnotations.
-  llvm::SmallVector<Attribute> unprocessedAnnos;
-  for (auto anno : annotations) {
-    if (!anno.isClass("sifive.enterprise.grandcentral.AugmentedBundleType")) {
-      unprocessedAnnos.push_back(anno.getDict());
-      continue;
-    }
+  bool removalError = false;
+  annotations.removeAnnotations([&](auto anno) {
+    if (!anno.isClass("sifive.enterprise.grandcentral.AugmentedBundleType"))
+      return false;
 
     AugmentedBundleType bundle;
     if (auto maybeBundle = decodeBundleType(anno))
       bundle = maybeBundle.getValue();
     else {
-      emitError(circuitOp.getLoc(),
-                "'firrtl.circuit' op contained an 'AugmentedBundleType' "
-                "Annotation which did not conform to the expected format")
+      emitCircuitError(
+          "'firrtl.circuit' op contained an 'AugmentedBundleType' "
+          "Annotation which did not conform to the expected format")
               .attachNote()
           << "the problematic 'AugmentedBundleType' is: '" << anno.getDict()
           << "'";
-      return signalPassFailure();
+      removalError = true;
+      return false;
     }
 
     for (auto elt : bundle.elements) {
@@ -396,14 +401,20 @@ void GrandCentralPass::runOnOperation() {
 
     // If the interface already exists, don't create it.
     if (interfaces.count(bundle.defName))
-      continue;
+      return true;
 
     // Create the interface.  This will be populated later.
     interfaces[bundle.defName] =
         builder.create<sv::InterfaceOp>(circuitOp->getLoc(), bundle.defName);
-  }
 
-  circuitOp->setAttr("annotations", builder.getArrayAttr(unprocessedAnnos));
+    return true;
+  });
+
+  if (removalError)
+    return signalPassFailure();
+
+  // Remove the processed annotations.
+  circuitOp->setAttr("annotations", annotations.getArrayAttr());
 
   // Walk through the circuit to collect additional information.  If this fails,
   // signal pass failure.
@@ -423,7 +434,7 @@ void GrandCentralPass::runOnOperation() {
 
     auto &info = interfaceMap[{defName, name}];
     if (info.isMissing()) {
-      emitError(circuitOp.getLoc())
+      emitCircuitError()
           << "'firrtl.circuit' op contained a Grand Central Interface '"
           << defName << "' that had an element '" << name
           << "' which did not have a scattered companion annotation (is there "
