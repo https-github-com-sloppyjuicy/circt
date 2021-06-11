@@ -109,7 +109,7 @@ static cl::opt<bool> extractTestCode("extract-test-code",
                                      cl::init(false));
 static cl::opt<bool> grandCentral(
     "firrtl-grand-central",
-    cl::desc("run passes to remove custom, SiFive Grand Central Annotations"),
+    cl::desc("create interfaces from SiFive Grand Central Annotations"),
     cl::init(false));
 
 enum OutputFormatKind {
