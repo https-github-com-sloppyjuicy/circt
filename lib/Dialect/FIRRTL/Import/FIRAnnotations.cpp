@@ -416,18 +416,17 @@ static bool parseAugmentedType(
          ArrayAttr::get(context, componentAttrs)});
   };
 
-  /// The package name for all Grand Central Annotations
-  static const char *package = "sifive.enterprise.grandcentral";
-
   auto classAttr =
       tryGetAs<StringAttr>(augmentedType, root, "class", loc, clazz, path);
   if (!classAttr)
     return false;
+  StringRef classBase = classAttr.getValue();
+  classBase.consume_front("sifive.enterprise.grandcentral.Augmented");
 
   // An AugmentedBundleType looks like:
   //   "defName": String
   //   "elements": Seq[AugmentedField]
-  if (classAttr.getValue() == (Twine(package) + ".AugmentedBundleType").str()) {
+  if (classBase == "BundleType") {
     defName =
         tryGetAs<StringAttr>(augmentedType, root, "defName", loc, clazz, path);
     if (!defName)
@@ -490,7 +489,7 @@ static bool parseAugmentedType(
   // The ReferenceTarget is not serialized to a string.  The GroundType will
   // either be an actual FIRRTL ground type or a GrandCentral uninferred type.
   // This can be ignored for us.
-  if (classAttr.getValue() == (Twine(package) + ".AugmentedGroundType").str()) {
+  if (classBase == "GroundType") {
     auto maybeTarget =
         refTargetToString(augmentedType.getAs<DictionaryAttr>("ref"));
     if (!maybeTarget) {
@@ -512,7 +511,7 @@ static bool parseAugmentedType(
 
   // An AugmentedVectorType looks like:
   //   "elements": Seq[AugmentedType]
-  if (classAttr.getValue() == (Twine(package) + ".AugmentedVectorType").str()) {
+  if (classBase == "VectorType") {
     auto elementsAttr =
         tryGetAs<ArrayAttr>(augmentedType, root, "elements", loc, clazz, path);
     if (!elementsAttr)
@@ -533,10 +532,7 @@ static bool parseAugmentedType(
   //   - AugmentedDoubleType
   bool ignoreable =
       llvm::StringSwitch<bool>(classAttr.getValue())
-          .Cases("sifive.enterprise.grandcentral.AugmentedStringType",
-                 "sifive.enterprise.grandcentral.AugmentedBooleanType",
-                 "sifive.enterprise.grandcentral.AugmentedIntegerType",
-                 "sifive.enterprise.grandcentral.AugmentedDoubleType", true)
+          .Cases("StringType", "BooleanType", "IntegerType", "DoubleType", true)
           .Default(false);
   if (ignoreable)
     return true;

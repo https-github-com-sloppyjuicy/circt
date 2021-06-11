@@ -32,7 +32,7 @@ namespace {
 /// an Element.
 struct ElementInfo {
   /// Encodes the "tpe" of an element.  This is called "Kind" to avoid
-  /// overloading the meeaning of "Type" (which also conflicts with mlir::Type).
+  /// overloading the meaning of "Type" (which also conflicts with mlir::Type).
   enum Kind {
     Error = -1,
     Ground,
@@ -161,6 +161,16 @@ static Optional<AugmentedBundleType> decodeBundleType(Annotation anno) {
 /// currently drops these, but this pass emits them as commented out strings.
 struct GrandCentralPass : public GrandCentralBase<GrandCentralPass> {
   void runOnOperation() override;
+
+private:
+  // Store a mapping of interface name to InterfaceOp.
+  llvm::StringMap<sv::InterfaceOp> interfaces;
+
+  // Discovered interfaces that need to be constructed.
+  llvm::DenseMap<std::pair<StringRef, StringRef>, ElementInfo> interfaceMap;
+
+  // Track the order that interfaces should be emitted in.
+  llvm::SmallVector<std::pair<StringRef, StringRef>> interfaceKeys;
 };
 
 class GrandCentralVisitor : public FIRRTLVisitor<GrandCentralVisitor> {
@@ -353,15 +363,6 @@ void GrandCentralPass::runOnOperation() {
 
   auto builder = OpBuilder::atBlockEnd(circuitOp->getBlock());
 
-  // Store a mapping of interface name to InterfaceOp.
-  llvm::StringMap<sv::InterfaceOp> interfaces;
-
-  // Discovered interfaces that need to be constructed.
-  llvm::DenseMap<std::pair<StringRef, StringRef>, ElementInfo> interfaceMap;
-
-  // Track the order that interfaces should be emitted in.
-  llvm::SmallVector<std::pair<StringRef, StringRef>> interfaceKeys;
-
   // Examine the Circuit's Annotations doing work to remove Grand Central
   // Annotations.  Ignore any unprocesssed annotations and rewrite the Circuit's
   // Annotations with these when done.
@@ -476,6 +477,10 @@ void GrandCentralPass::runOnOperation() {
       break;
     }
   }
+
+  interfaces.clear();
+  interfaceMap.clear();
+  interfaceKeys.clear();
 }
 
 //===----------------------------------------------------------------------===//
