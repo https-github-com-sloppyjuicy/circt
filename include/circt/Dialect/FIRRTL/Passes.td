@@ -180,7 +180,7 @@ def PrintInstanceGraph
   let constructor =  "circt::firrtl::createPrintInstanceGraphPass()";
 }
 
-def GrandCentral : Pass<"sifive-gct", "CircuitOp"> {
+def GrandCentral : Pass<"firrtl-grand-central", "CircuitOp"> {
   let summary = "Remove Grand Central Annotations";
   let description = [{
     Processes annotations associated with SiFive's Grand Central utility.

@@ -16,7 +16,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/OperationSupport.h"
-#include "llvm/ADT/StringSet.h"
+#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/JSON.h"
 
 namespace json = llvm::json;
@@ -531,11 +531,14 @@ static bool parseAugmentedType(
   //   - AugmentedBooleanType
   //   - AugmentedIntegerType
   //   - AugmentedDoubleType
-  llvm::StringSet<> ignored({(Twine(package) + ".AugmentedStringType").str(),
-                             (Twine(package) + ".AugmentedBooleanType").str(),
-                             (Twine(package) + ".AugmentedIntegerType").str(),
-                             (Twine(package) + ".AugmentedDoubleType").str()});
-  if (ignored.contains(classAttr.getValue()))
+  bool ignoreable =
+      llvm::StringSwitch<bool>(classAttr.getValue())
+          .Cases("sifive.enterprise.grandcentral.AugmentedStringType",
+                 "sifive.enterprise.grandcentral.AugmentedBooleanType",
+                 "sifive.enterprise.grandcentral.AugmentedIntegerType",
+                 "sifive.enterprise.grandcentral.AugmentedDoubleType", true)
+          .Default(false);
+  if (ignoreable)
     return true;
 
   // Anything else is unexpected or a user error if they manually wrote
