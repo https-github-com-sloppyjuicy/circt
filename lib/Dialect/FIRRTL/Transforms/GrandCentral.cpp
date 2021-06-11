@@ -366,6 +366,8 @@ void GrandCentralPass::runOnOperation() {
   // Examine the Circuit's Annotations doing work to remove Grand Central
   // Annotations.  Ignore any unprocesssed annotations and rewrite the Circuit's
   // Annotations with these when done.
+  //
+  // TODO: Refactor this to use AnnotationSet.removeAnnotations.
   llvm::SmallVector<Attribute> unprocessedAnnos;
   for (auto anno : annotations) {
     if (!anno.isClass("sifive.enterprise.grandcentral.AugmentedBundleType")) {
