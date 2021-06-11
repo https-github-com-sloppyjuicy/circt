@@ -1,4 +1,4 @@
-// RUN: circt-opt -pass-pipeline='firrtl.circuit(sifive-gct)' -split-input-file %s | FileCheck %s
+// RUN: circt-opt -pass-pipeline='firrtl.circuit(firrtl-grand-central)' -split-input-file %s | FileCheck %s
 
 firrtl.circuit "InterfaceGroundType" attributes {annotations = [{class = "sifive.enterprise.grandcentral.AugmentedBundleType", defName = "Foo", elements = [{description = "description of foo", name = "foo", tpe = "sifive.enterprise.grandcentral.AugmentedGroundType"}, {name = "bar", tpe = "sifive.enterprise.grandcentral.AugmentedGroundType"}]}]} {
   firrtl.module @InterfaceGroundType() {

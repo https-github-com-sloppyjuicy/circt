@@ -1,4 +1,4 @@
-// RUN: circt-opt -pass-pipeline='firrtl.circuit(sifive-gct)' -split-input-file -verify-diagnostics %s
+// RUN: circt-opt -pass-pipeline='firrtl.circuit(firrtl-grand-central)' -split-input-file -verify-diagnostics %s
 
 firrtl.circuit "NonGroundType" attributes {annotations = [{class = "sifive.enterprise.grandcentral.AugmentedBundleType", defName = "Foo", elements = [{name = "foo", tpe = "sifive.enterprise.grandcentral.AugmentedGroundType"}]}]} {
   firrtl.module @NonGroundType() {
